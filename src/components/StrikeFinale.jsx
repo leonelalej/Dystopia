@@ -5,8 +5,14 @@ import { SceneContents } from './Scene3D';
 
 /*
  * ═══════════════════════════════════════════════════════════
- * STRIKE FINALE — Neon Tunnel + Scroll-Driven Strike
+ * STRIKE FINALE — Cinematic 3D Bowling Lane + Scroll Strike
  * ═══════════════════════════════════════════════════════════
+ *
+ * Coordinates with App's transition mask:
+ * - Starts with a full veil (opacity 1) that fades out,
+ *   revealing the 3D scene smoothly.
+ * - Canvas uses shadows, fog, and intimate camera for
+ *   premium visual quality.
  */
 
 export default function StrikeFinale() {
@@ -17,8 +23,15 @@ export default function StrikeFinale() {
     offset: ['start start', 'end end'],
   });
 
-  /* ═══ VEIL (dims slightly at the end for text readability) ═══ */
+  /* ═══ ENTRY VEIL — starts opaque, fades out as user scrolls in ═══ */
   const veilOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.08, 0.15],
+    [1, 0.5, 0]
+  );
+
+  /* ═══ EXIT VEIL — dims slightly at the end for text readability ═══ */
+  const exitVeilOpacity = useTransform(
     scrollYProgress,
     [0.75, 0.90],
     [0, 0.3]
@@ -35,21 +48,37 @@ export default function StrikeFinale() {
     <div ref={containerRef} className="strike-finale-container">
       <div className="strike-sticky-viewport">
         
+        {/* Background noise for consistency */}
+        <div className="noise-overlay" />
+
         {/* ═══ 3D SCENE ═══ */}
         <div style={{ position: 'absolute', inset: 0 }}>
           <Canvas
-            camera={{ position: [0, 1.5, 5], fov: 60 }}
+            shadows
+            camera={{ position: [0, 1.1, 7.5], fov: 45 }}
             gl={{ antialias: true }}
           >
             <SceneContents scrollYProgress={scrollYProgress} />
           </Canvas>
         </div>
 
-        {/* Black veil for fade in/out transitions */}
-        <motion.div className="tunnel-veil" style={{ opacity: veilOpacity, pointerEvents: 'none' }} />
+        {/* Entry veil — seamless reveal from transition mask */}
+        <motion.div
+          className="tunnel-veil"
+          style={{ opacity: veilOpacity, pointerEvents: 'none' }}
+        />
+
+        {/* Exit veil — subtle dim at end */}
+        <motion.div
+          className="tunnel-veil"
+          style={{ opacity: exitVeilOpacity, pointerEvents: 'none' }}
+        />
 
         {/* ═══ IMPACT FLASH ═══ */}
-        <motion.div className="strike-flash" style={{ opacity: flashOpacity, pointerEvents: 'none' }} />
+        <motion.div
+          className="strike-flash"
+          style={{ opacity: flashOpacity, pointerEvents: 'none' }}
+        />
 
       </div>
     </div>

@@ -1,24 +1,19 @@
 import React, { useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
 import { useTransform } from 'framer-motion';
 import * as THREE from 'three';
 
 /*
- * ═══════════════════════════════════════════════════
- * Scene3D — Bowling lane with TRON aesthetic
- * ═══════════════════════════════════════════════════
+ * ═══════════════════════════════════════════════
+ * Scene3D — Cinematic Bowling Lane (Anti-PS2)
+ * ═══════════════════════════════════════════════
+ *
+ * Physical materials, spotlight shadows, fog depth,
+ * intimate camera angle. No neon rings, no grids,
+ * no Tron wireframes — premium realism only.
  */
 
 const LANE_END = -18;
-
-// Neon rings along the tunnel
-const RING_COUNT = 25;
-const RINGS = Array.from({ length: RING_COUNT }, (_, i) => ({
-  id: i,
-  z: -i * 1.0,
-  color: i % 2 === 0 ? '#00f3ff' : '#ff007f',
-}));
 
 // Standard 10-pin triangle at Z = -18
 const PIN_POSITIONS = [
@@ -54,34 +49,32 @@ const SCATTER_DIRS = [
    ───────────────────────────────────────────── */
 function usePinGeometry() {
   return useMemo(() => {
-    // Profile points from base to head (x = radius, y = height)
     const points = [
-      new THREE.Vector2(0.00, -0.35), // bottom center
-      new THREE.Vector2(0.16, -0.35), // base edge
-      new THREE.Vector2(0.18, -0.30), // base top
-      new THREE.Vector2(0.22, -0.15), // belly start
-      new THREE.Vector2(0.24,  0.00), // widest belly
-      new THREE.Vector2(0.22,  0.12), // belly taper
-      new THREE.Vector2(0.17,  0.22), // waist start
-      new THREE.Vector2(0.11,  0.32), // neck
-      new THREE.Vector2(0.09,  0.38), // neck narrow
-      new THREE.Vector2(0.10,  0.44), // head start
-      new THREE.Vector2(0.10,  0.48), // head mid
-      new THREE.Vector2(0.08,  0.54), // head top
-      new THREE.Vector2(0.00,  0.58), // tip
+      new THREE.Vector2(0.00, -0.35),
+      new THREE.Vector2(0.16, -0.35),
+      new THREE.Vector2(0.18, -0.30),
+      new THREE.Vector2(0.22, -0.15),
+      new THREE.Vector2(0.24,  0.00),
+      new THREE.Vector2(0.22,  0.12),
+      new THREE.Vector2(0.17,  0.22),
+      new THREE.Vector2(0.11,  0.32),
+      new THREE.Vector2(0.09,  0.38),
+      new THREE.Vector2(0.10,  0.44),
+      new THREE.Vector2(0.10,  0.48),
+      new THREE.Vector2(0.08,  0.54),
+      new THREE.Vector2(0.00,  0.58),
     ];
     return new THREE.LatheGeometry(points, 32);
   }, []);
 }
 
 /* ─────────────────────────────────────────────
-   Pin component — Smooth lathe shape with stripes
+   Pin component — Physical material, subtle accent edge
    ───────────────────────────────────────────── */
 function Pin({ startX, startZ, scatter, scrollYProgress }) {
   const groupRef = React.useRef();
   const pinGeo = usePinGeometry();
 
-  // Stay put until 0.55, then scatter
   const x    = useTransform(scrollYProgress, [0, 0.55, 0.75], [startX, startX, startX + scatter.dx]);
   const y    = useTransform(scrollYProgress, [0, 0.55, 0.75], [0, 0, scatter.dy]);
   const z    = useTransform(scrollYProgress, [0, 0.55, 0.75], [startZ, startZ, startZ + scatter.dz]);
@@ -98,36 +91,32 @@ function Pin({ startX, startZ, scatter, scrollYProgress }) {
 
   return (
     <group ref={groupRef}>
-      {/* Smooth pin body */}
-      <mesh geometry={pinGeo}>
+      {/* Pin body — smooth physical material */}
+      <mesh geometry={pinGeo} castShadow>
         <meshStandardMaterial
-          color="#f5f5f5"
+          color="#f0ece4"
           emissive="#ffffff"
-          emissiveIntensity={0.15}
-          roughness={0.12}
+          emissiveIntensity={0.05}
+          roughness={0.25}
           metalness={0.05}
         />
       </mesh>
       {/* Top red stripe */}
-      <mesh position={[0, 0.36, 0]}>
+      <mesh position={[0, 0.36, 0]} castShadow>
         <cylinderGeometry args={[0.105, 0.115, 0.05, 32]} />
-        <meshStandardMaterial color="#cc0000" emissive="#ff0000" emissiveIntensity={0.6} />
+        <meshStandardMaterial color="#b00020" emissive="#cc0000" emissiveIntensity={0.15} roughness={0.3} />
       </mesh>
       {/* Bottom red stripe */}
-      <mesh position={[0, 0.30, 0]}>
+      <mesh position={[0, 0.30, 0]} castShadow>
         <cylinderGeometry args={[0.125, 0.13, 0.05, 32]} />
-        <meshStandardMaterial color="#cc0000" emissive="#ff0000" emissiveIntensity={0.6} />
-      </mesh>
-      {/* Neon edge glow on pin (Tron style) */}
-      <mesh geometry={pinGeo}>
-        <meshBasicMaterial color="#00f3ff" wireframe opacity={0.08} transparent />
+        <meshStandardMaterial color="#b00020" emissive="#cc0000" emissiveIntensity={0.15} roughness={0.3} />
       </mesh>
     </group>
   );
 }
 
 /* ─────────────────────────────────────────────
-   SceneContents — the full 3D scene
+   SceneContents — the full 3D scene (cinematic)
    ───────────────────────────────────────────── */
 export function SceneContents({ scrollYProgress }) {
   const ballRef = React.useRef();
@@ -144,12 +133,12 @@ export function SceneContents({ scrollYProgress }) {
   const textScale = useTransform(scrollYProgress, [0.54, 0.58, 0.70, 0.80], [0, 1.2, 1, 0]);
 
   useFrame(({ camera }) => {
-    // Camera always stays behind the ball
+    // Camera: intimate, cinematic, following behind ball
     const bz = ballZ.get();
     const by = ballY.get();
-    camera.position.z = bz + 3;
-    camera.position.y = 1.2 + by * 0.3;
-    camera.lookAt(0, 0.5, bz - 2);
+    camera.position.z = bz + 4;
+    camera.position.y = 1.0 + by * 0.2;
+    camera.lookAt(0, 0.3, bz - 3);
 
     // Sync ball
     if (ballRef.current) {
@@ -167,61 +156,83 @@ export function SceneContents({ scrollYProgress }) {
 
   return (
     <>
-      {/* ── Lighting (moody, Tron-like) ── */}
-      <ambientLight intensity={0.15} />
-      <directionalLight position={[5, 10, 5]} intensity={0.6} color="#ffffff" />
-      <pointLight position={[0, 2, LANE_END]} intensity={4} color="#ff007f" distance={12} />
-      <pointLight position={[0, 3, -5]} intensity={3} color="#00f3ff" distance={12} />
-      <pointLight position={[0, 1, -10]} intensity={2} color="#b900ff" distance={10} />
+      {/* ── Fog (masks canvas edges seamlessly) ── */}
+      <fog attach="fog" args={['#050505', 6, 22]} />
+
+      {/* ── Lighting (brighter for less visual fatigue) ── */}
+      <ambientLight intensity={0.5} />
+      <spotLight
+        position={[10, 18, 5]}
+        intensity={3.5}
+        castShadow
+        penumbra={1}
+        angle={0.5}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0001}
+        color="#ffffff"
+      />
+      <spotLight
+        position={[-8, 14, -10]}
+        intensity={2.0}
+        castShadow
+        penumbra={0.8}
+        angle={0.6}
+        color="#e8e4f0"
+      />
+      {/* Subtle accent fill from pin area */}
+      <pointLight position={[0, 2, LANE_END]} intensity={2.5} color="#3781fe" distance={10} decay={2} />
 
       {/* ── Dark reflective floor ── */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, -12]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, -12]} receiveShadow>
         <planeGeometry args={[30, 50]} />
-        <meshStandardMaterial color="#020208" metalness={0.98} roughness={0.02} />
+        <meshStandardMaterial color="#060608" metalness={0.9} roughness={0.08} />
       </mesh>
 
-      {/* ── Tron Grid Floor ── */}
-      <gridHelper args={[50, 80, '#00f3ff', '#00f3ff']} position={[0, -0.49, -12]} />
-      {/* Second grid layer for cross-pattern depth */}
-      <gridHelper args={[50, 20, '#ff007f', 'transparent']} position={[0, -0.48, -12]} />
+      {/* ── Lane surface (subtle, premium) ── */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.48, -10]} receiveShadow>
+        <planeGeometry args={[2.4, 30]} />
+        <meshStandardMaterial
+          color="#1a1408"
+          roughness={0.2}
+          metalness={0.7}
+        />
+      </mesh>
 
-      {/* ── Lane guide lines (bright neon cyan) ── */}
+      {/* ── Glowing Path (El recorrido) ── */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.47, -10]}>
+        <planeGeometry args={[1.6, 30]} />
+        <meshStandardMaterial
+          color="#df2a8f"
+          emissive="#df2a8f"
+          emissiveIntensity={0.8}
+          transparent
+          opacity={0.15}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* ── Lane guide lines (subtle brand accent) ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-1.2, -0.47, -10]}>
-        <planeGeometry args={[0.04, 30]} />
-        <meshBasicMaterial color="#00f3ff" />
+        <planeGeometry args={[0.02, 30]} />
+        <meshStandardMaterial
+          color="#3781fe"
+          emissive="#3781fe"
+          emissiveIntensity={0.3}
+          transparent
+          opacity={0.15}
+        />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1.2, -0.47, -10]}>
-        <planeGeometry args={[0.04, 30]} />
-        <meshBasicMaterial color="#00f3ff" />
+        <planeGeometry args={[0.02, 30]} />
+        <meshStandardMaterial
+          color="#3781fe"
+          emissive="#3781fe"
+          emissiveIntensity={0.3}
+          transparent
+          opacity={0.15}
+        />
       </mesh>
-      {/* Center lane line */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.47, -10]}>
-        <planeGeometry args={[0.015, 30]} />
-        <meshBasicMaterial color="#ff007f" opacity={0.4} transparent />
-      </mesh>
-
-      {/* ── Neon Rings (tunnel) — thicker, brighter ── */}
-      {RINGS.map((ring) => (
-        <mesh key={ring.id} position={[0, 1, ring.z]}>
-          <torusGeometry args={[2.5, 0.06, 16, 64]} />
-          <meshStandardMaterial
-            color={ring.color}
-            emissive={ring.color}
-            emissiveIntensity={3}
-            toneMapped={false}
-          />
-        </mesh>
-      ))}
-
-      {/* ── Vertical Tron light pillars ── */}
-      {[-2.5, 2.5].map((xPos) =>
-        Array.from({ length: 6 }, (_, i) => (
-          <mesh key={`pillar-${xPos}-${i}`} position={[xPos, 1.5, -i * 4]}>
-            <boxGeometry args={[0.03, 3, 0.03]} />
-            <meshBasicMaterial color="#00f3ff" opacity={0.3} transparent />
-          </mesh>
-        ))
-      )}
 
       {/* ── 10 Pins ── */}
       {PIN_POSITIONS.map((pin, i) => (
@@ -234,45 +245,42 @@ export function SceneContents({ scrollYProgress }) {
         />
       ))}
 
-      {/* ── Bowling Ball (dark blue with neon glow ring) ── */}
+      {/* ── Bowling Ball (Physical Material, premium) ── */}
       <group ref={ballRef}>
-        <mesh>
-          <sphereGeometry args={[0.4, 32, 32]} />
-          <meshStandardMaterial color="#0a1628" metalness={0.95} roughness={0.03} emissive="#1e3a8a" emissiveIntensity={0.3} />
-        </mesh>
-        {/* Neon equator ring (Tron style) */}
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.4, 0.008, 16, 64]} />
-          <meshBasicMaterial color="#00f3ff" />
+        <mesh castShadow>
+          <sphereGeometry args={[0.4, 64, 64]} />
+          <meshPhysicalMaterial
+            color="#1a0040"
+            metalness={0.8}
+            roughness={0.15}
+            clearcoat={1}
+            clearcoatRoughness={0.1}
+            emissive="#2b0059"
+            emissiveIntensity={0.08}
+          />
         </mesh>
         {/* Thumb hole */}
         <mesh position={[0, -0.08, 0.36]}>
           <sphereGeometry args={[0.07, 16, 16]} />
-          <meshBasicMaterial color="#000000" />
+          <meshStandardMaterial color="#000000" roughness={0.9} />
         </mesh>
         {/* Finger holes */}
         <mesh position={[0.15, 0.15, 0.32]}>
           <sphereGeometry args={[0.06, 16, 16]} />
-          <meshBasicMaterial color="#000000" />
+          <meshStandardMaterial color="#000000" roughness={0.9} />
         </mesh>
         <mesh position={[-0.15, 0.15, 0.32]}>
           <sphereGeometry args={[0.06, 16, 16]} />
-          <meshBasicMaterial color="#000000" />
+          <meshStandardMaterial color="#000000" roughness={0.9} />
         </mesh>
       </group>
 
-      {/* ── STRIKE! Text (small) ── */}
+      {/* ── STRIKE! Text ── */}
       <group ref={textRef} position={[0, 1.5, LANE_END - 2]}>
-        <Text
-          fontSize={0.7}
-          color="#00f3ff"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.03}
-          outlineColor="#ff007f"
-        >
-          STRIKE!
-        </Text>
+        <mesh>
+          <planeGeometry args={[3, 0.8]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
       </group>
     </>
   );
@@ -280,9 +288,10 @@ export function SceneContents({ scrollYProgress }) {
 
 export default function Scene3D({ scrollYProgress }) {
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, background: '#000' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, background: '#050505' }}>
       <Canvas
-        camera={{ position: [0, 1.5, 5], fov: 60 }}
+        shadows
+        camera={{ position: [0, 1.1, 7.5], fov: 45 }}
         gl={{ antialias: true }}
       >
         <SceneContents scrollYProgress={scrollYProgress} />
