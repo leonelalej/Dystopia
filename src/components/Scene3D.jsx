@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTransform } from 'framer-motion';
+import { Grid, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 
 /*
@@ -215,24 +216,46 @@ export function SceneContents({ scrollYProgress }) {
       {/* ── Lane guide lines (subtle brand accent) ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-1.2, -0.47, -10]}>
         <planeGeometry args={[0.02, 30]} />
-        <meshStandardMaterial
-          color="#3781fe"
-          emissive="#3781fe"
-          emissiveIntensity={0.3}
-          transparent
-          opacity={0.15}
-        />
+        <meshBasicMaterial color="#3781fe" transparent opacity={0.3} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1.2, -0.47, -10]}>
         <planeGeometry args={[0.02, 30]} />
-        <meshStandardMaterial
-          color="#3781fe"
-          emissive="#3781fe"
-          emissiveIntensity={0.3}
-          transparent
-          opacity={0.15}
-        />
+        <meshBasicMaterial color="#3781fe" transparent opacity={0.3} />
       </mesh>
+
+      {/* ═══ PREMIUM TRON ENVIRONMENT ═══ */}
+      {/* Infinite fading grid */}
+      <Grid
+        position={[0, -1.0, 0]}
+        args={[100, 100]}
+        cellColor="#0a1220"
+        sectionColor="#3781fe"
+        sectionThickness={1.0}
+        cellThickness={0.5}
+        fadeDistance={40}
+        fadeStrength={1}
+        infiniteGrid
+      />
+
+      {/* Atmospheric digital particles */}
+      <Sparkles 
+        count={50} 
+        scale={[20, 10, 30]} 
+        position={[0, 4, -10]} 
+        color="#df2a8f" 
+        size={2} 
+        speed={0.2} 
+        opacity={0.15} 
+      />
+      <Sparkles 
+        count={50} 
+        scale={[30, 15, 30]} 
+        position={[0, 2, -5]} 
+        color="#3781fe" 
+        size={1.5} 
+        speed={0.1} 
+        opacity={0.1} 
+      />
 
       {/* ── 10 Pins ── */}
       {PIN_POSITIONS.map((pin, i) => (
