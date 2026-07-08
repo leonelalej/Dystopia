@@ -81,7 +81,7 @@ export default function ScrollScene() {
   /* ─── Ball offset (pixels from center) ─── */
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const rightX = typeof window !== 'undefined'
-    ? (isMobile ? window.innerWidth * 0.08 : window.innerWidth * 0.25)
+    ? (isMobile ? window.innerWidth * 0.38 : window.innerWidth * 0.25)
     : 400;
   const leftX = -rightX;
 
@@ -93,9 +93,12 @@ export default function ScrollScene() {
 
   const ballRotate = useTransform(smoothProgress, [0, 1], [0, 720]);
 
+  const maxScale = isMobile ? 0.6 : 1;
+  const minScale = isMobile ? 0.35 : 0.55;
+
   const ballScale = useTransform(smoothProgress,
     [0, 0.04, 0.10, 0.85, 0.92, 1.0],
-    [0.55, 1, 1, 1, 1, 0.55]
+    [minScale, maxScale, maxScale, maxScale, maxScale, minScale]
   );
 
   /* Subtle vertical bounce during transitions */
@@ -122,6 +125,9 @@ export default function ScrollScene() {
   const heroOp    = useTransform(smoothProgress, [0, 0.015, 0.04], [1, 0.8, 0]);
   const heroScale = useTransform(smoothProgress, [0, 0.015, 0.04], [1, 0.97, 0.88]);
   const heroY     = useTransform(smoothProgress, [0, 0.04], [0, -80]);
+
+  /* ═══ BALL APPEARANCE ═══ */
+  const ballOpacity = useTransform(smoothProgress, [0, 0.02, 0.06], [0, 0, 1]);
 
   /* ═══ SECTION 1 — The Lanes (text left) ═══ */
   const s1Op = useTransform(smoothProgress, [0.06, 0.10, 0.20, 0.24], [0, 1, 1, 0]);
@@ -227,7 +233,7 @@ export default function ScrollScene() {
         {/* ══════════ BOWLING BALL ══════════ */}
         <motion.div
           className="ball-container"
-          style={{ x: ballX, y: ballY, scale: ballScale }}
+          style={{ x: ballX, y: ballY, scale: ballScale, opacity: ballOpacity }}
         >
           <div className="ball-sphere-wrapper">
             {/* Glow layers (cross-faded per section) */}

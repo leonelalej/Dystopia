@@ -16,6 +16,7 @@ import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-mot
 
 const NAV_ITEMS = [
   { label: 'Lanes', scrollTo: 0.12 },
+  { label: 'Experience', scrollTo: 0.32 },
   { label: 'Menu', scrollTo: 0.58 },
   { label: 'Reserve', scrollTo: 0.73 },
 ];

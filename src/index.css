@@ -50,7 +50,7 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #3781fe, #df2a8f, #e7ff00);
+  background: #3781fe;
   z-index: 9999;
   transform-origin: 0% 0%;
   will-change: transform;
@@ -240,13 +240,24 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 30;
   pointer-events: none;
   will-change: transform, opacity;
 }
+@keyframes heroSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .hero-title {
   font-family: var(--font-heading);
-  font-size: clamp(4rem, 14vw, 11rem);
+  font-size: clamp(5rem, 16vw, 13rem);
   font-weight: 700;
   letter-spacing: 0.12em;
   line-height: 0.85;
@@ -254,6 +265,7 @@ body {
   text-align: center;
   text-transform: uppercase;
   text-shadow: 0 0 60px rgba(55, 129, 254, 0.08), 0 0 120px rgba(43, 0, 89, 0.04);
+  animation: heroSlideIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 .hero-subtitle {
   font-family: var(--font-body);
@@ -263,6 +275,8 @@ body {
   color: rgba(255, 255, 255, 0.25);
   margin-top: 12px;
   text-transform: uppercase;
+  opacity: 0;
+  animation: heroSlideIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards;
 }
 
 /* ── Scroll Indicator ── */
@@ -355,7 +369,7 @@ body {
 
 .section-title {
   font-family: var(--font-heading);
-  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.05;
@@ -366,16 +380,16 @@ body {
 
 .section-description {
   font-family: var(--font-body);
-  font-size: clamp(0.85rem, 1vw, 0.95rem);
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
   font-weight: 300;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.45);
   margin-bottom: 28px;
 }
 
 .section-features {
   font-family: var(--font-body);
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 4px;
   color: rgba(255, 255, 255, 0.15);
@@ -620,7 +634,7 @@ body {
     max-width: 380px;
   }
   .ball-container {
-    opacity: 0.12 !important;
+    pointer-events: none;
   }
   .center-line {
     display: none;
@@ -648,10 +662,10 @@ body {
 
 @media (max-width: 480px) {
   .hero-title {
-    font-size: clamp(3rem, 18vw, 5rem);
+    font-size: clamp(3.5rem, 20vw, 6rem);
   }
   .section-title {
-    font-size: 1.6rem;
+    font-size: 2rem;
   }
   .header-nav-link {
     font-size: 0.55rem;

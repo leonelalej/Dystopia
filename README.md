@@ -39,9 +39,31 @@ Make sure you have [Node.js](https://nodejs.org/) installed (v18 or higher recom
    ```
    This will start the Vite dev server. Open the local address printed in the terminal (usually `http://localhost:5173`) in your browser.
 
+### Share Local Server with Cloudflare Tunnel 🌐
+
+To share your local development or preview server with others using a secure Cloudflare Tunnel:
+
+1. **For the development server (`http://localhost:5173`)**:
+   - Make sure your dev server is running: `npm run dev`
+   - In a new terminal window, run:
+     ```bash
+     npm run tunnel
+     ```
+   
+2. **For the production build preview (`http://localhost:4173`)**:
+   - Build the application: `npm run build`
+   - Start the preview server: `npm run preview`
+   - In a new terminal window, run:
+     ```bash
+     npm run tunnel:preview
+     ```
+
+In both cases, `npx cloudflared` will spin up a secure, temporary Cloudflare Quick Tunnel and display the public URL (e.g., `https://random-name.trycloudflare.com`) in your console.
+
 ### Build for Production
 To build the application for production deployment, run:
 ```bash
 npm run build
 ```
 The output will be generated in the `dist` directory.
+
