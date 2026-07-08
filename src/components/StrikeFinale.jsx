@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
+import * as THREE from 'three';
 import { SceneContents } from './Scene3D';
 
 /*
@@ -15,7 +16,7 @@ import { SceneContents } from './Scene3D';
  *   reflective materials for cyberpunk visual quality.
  */
 
-export default function StrikeFinale() {
+export default function StrikeFinale({ shouldRender = false }) {
   const containerRef = useRef(null);
 
   const { scrollYProgress } = useScroll({
@@ -51,16 +52,18 @@ export default function StrikeFinale() {
         {/* Background noise for consistency */}
         <div className="noise-overlay" />
 
-        {/* ═══ 3D SCENE ═══ */}
-        <div style={{ position: 'absolute', inset: 0 }}>
-          <Canvas
-            shadows
-            camera={{ position: [0, 1.1, 7.5], fov: 45 }}
-            gl={{ antialias: true }}
-          >
-            <SceneContents scrollYProgress={scrollYProgress} />
-          </Canvas>
-        </div>
+        {/* ═══ 3D SCENE (Mounted lazily once the user scrolls down) ═══ */}
+        {shouldRender && (
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <Canvas
+              shadows
+              camera={{ position: [0, 1.1, 7.5], fov: 45 }}
+              gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, powerPreference: "high-performance" }}
+            >
+              <SceneContents scrollYProgress={scrollYProgress} />
+            </Canvas>
+          </div>
+        )}
 
         {/* Entry veil — seamless reveal from transition mask */}
         <motion.div

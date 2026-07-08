@@ -24,7 +24,17 @@ export default function App() {
   const [isDocked, setIsDocked] = React.useState(false);
   const isDockedRef = React.useRef(false);
 
+  const [shouldRender3D, setShouldRender3D] = React.useState(false);
+  const shouldRender3DRef = React.useRef(false);
+
   useMotionValueEvent(scrollYProgress, 'change', (v) => {
+    // Mount the 3D scene only after the user starts scrolling down (past 20%)
+    const next3D = v >= 0.2;
+    if (next3D !== shouldRender3DRef.current) {
+      shouldRender3DRef.current = next3D;
+      setShouldRender3D(next3D);
+    }
+
     const next = v >= 0.95;
     if (next !== isDockedRef.current) {
       isDockedRef.current = next;
@@ -54,7 +64,7 @@ export default function App() {
         style={{ opacity: maskOpacity }}
       />
 
-      <StrikeFinale />
+      <StrikeFinale shouldRender={shouldRender3D} />
       <Footer isDocked={isDocked} />
       <SocialBar isDocked={isDocked} />
     </>
