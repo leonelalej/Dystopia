@@ -396,7 +396,18 @@ body {
   text-transform: uppercase;
 }
 
-/* ── CTA Button ── */
+/* ── CTA Button & Group ── */
+.cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.section-text--left .cta-group {
+  justify-content: flex-start;
+}
+.section-text--right .cta-group {
+  justify-content: flex-end;
+}
 .cta-btn {
   display: inline-flex;
   align-items: center;
@@ -646,6 +657,9 @@ body {
   .social-link {
     width: 36px;
     height: 36px;
+  }
+  .cta-group {
+    justify-content: center !important;
   }
   .cta-btn {
     padding: 12px 28px;

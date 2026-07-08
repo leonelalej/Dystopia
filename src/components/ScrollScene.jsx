@@ -39,6 +39,10 @@ const SECTIONS = [
     title: 'STRIKE INTO\nTHE ABYSS',
     desc: 'Premium bowling redefined. Individual lanes, group packages, and VIP experiences that transform every frame into a cinematic moment.',
     features: 'INDIVIDUAL · GROUPS · VIP PACKAGES',
+    cta: {
+      text: 'PAQUETES DE CUMPLEAÑOS',
+      href: 'https://drive.google.com/file/d/1Y0bH2omorRjh_EFbKCN1Bzf6Lj5ntj4U/view',
+    },
     side: 'right',
     accent: '#df2a8f',
     accentName: 'magenta',
@@ -48,6 +52,16 @@ const SECTIONS = [
     title: 'COSMIC BITES &\nSIGNATURE DRINKS',
     desc: 'Fuel your game with chef-crafted bites and signature cocktails. From gourmet burgers to artisan drinks — taste the atmosphere.',
     features: 'FULL BAR · KITCHEN UNTIL 2AM · VIP SERVICE',
+    ctas: [
+      {
+        text: 'MENÚ TIENDA',
+        href: 'https://drive.google.com/file/d/1RU3XM7SEGWgLCWP92HSQZLv95kQwqt0I/view',
+      },
+      {
+        text: 'MENÚ DELIVERY',
+        href: 'https://drive.google.com/file/d/1wUhtYOhOKLdWs16MEPzPfETtPimXilq7/view',
+      }
+    ],
     side: 'left',
     accent: '#e7ff00',
     accentName: 'yellow',
@@ -267,11 +281,12 @@ export default function ScrollScene() {
    ──────────────────────────────────────────── */
 function SectionPanel({ data, opacity, slideX, slideY }) {
   const sideClass = data.side === 'left' ? 'section-text--left' : 'section-text--right';
+  const pointerEvents = useTransform(opacity, (v) => (v > 0.1 ? 'auto' : 'none'));
 
   return (
     <motion.div
       className={`section-text ${sideClass}`}
-      style={{ opacity, x: slideX, y: slideY }}
+      style={{ opacity, x: slideX, y: slideY, pointerEvents }}
     >
       <div className="section-inner">
         <p className="section-label" style={{ color: data.accent }}>
@@ -285,7 +300,21 @@ function SectionPanel({ data, opacity, slideX, slideY }) {
         {data.features && (
           <p className="section-features">{data.features}</p>
         )}
-        {data.cta && (
+        {data.ctas ? (
+          <div className="cta-group">
+            {data.ctas.map((c, i) => (
+              <a
+                key={i}
+                href={c.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cta-btn"
+              >
+                {c.text}
+              </a>
+            ))}
+          </div>
+        ) : data.cta ? (
           <a
             href={data.cta.href}
             target="_blank"
@@ -294,7 +323,7 @@ function SectionPanel({ data, opacity, slideX, slideY }) {
           >
             {data.cta.text}
           </a>
-        )}
+        ) : null}
       </div>
     </motion.div>
   );
