@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTransform } from 'framer-motion';
 import { Grid, Sparkles } from '@react-three/drei';
@@ -6,12 +6,16 @@ import * as THREE from 'three';
 
 /*
  * ═══════════════════════════════════════════════
- * Scene3D — Cinematic Bowling Lane (Anti-PS2)
+ * Scene3D — Cyberpunk Bowling Lane (Re-Design)
  * ═══════════════════════════════════════════════
  *
- * Physical materials, spotlight shadows, fog depth,
- * intimate camera angle. No neon rings, no grids,
- * no Tron wireframes — premium realism only.
+ * RE-DESIGN overhaul:
+ * - fogExp2 with deep brand purple for atmospheric depth
+ * - Dramatic neon spotlight rig with sharp shadows
+ * - Reflective MeshPhysicalMaterial on ball, lane, floor
+ * - Floating wireframe geometric elements
+ * - Volumetric light shafts
+ * - Dense particle systems
  */
 
 const LANE_END = -18;
@@ -46,7 +50,6 @@ const SCATTER_DIRS = [
 
 /* ─────────────────────────────────────────────
    Bowling pin profile (LatheGeometry)
-   Creates a smooth realistic bowling pin shape.
    ───────────────────────────────────────────── */
 function usePinGeometry() {
   return useMemo(() => {
@@ -70,7 +73,7 @@ function usePinGeometry() {
 }
 
 /* ─────────────────────────────────────────────
-   Pin component — Physical material, subtle accent edge
+   Pin component — Reflective physical material
    ───────────────────────────────────────────── */
 function Pin({ startX, startZ, scatter, scrollYProgress }) {
   const groupRef = React.useRef();
@@ -92,36 +95,125 @@ function Pin({ startX, startZ, scatter, scrollYProgress }) {
 
   return (
     <group ref={groupRef}>
-      {/* Pin body — smooth physical material */}
+      {/* Pin body — glossy physical material for neon reflections */}
       <mesh geometry={pinGeo} castShadow>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color="#f0ece4"
           emissive="#ffffff"
-          emissiveIntensity={0.05}
-          roughness={0.25}
-          metalness={0.05}
+          emissiveIntensity={0.08}
+          roughness={0.15}
+          metalness={0.15}
+          clearcoat={0.4}
+          clearcoatRoughness={0.2}
         />
       </mesh>
-      {/* Top red stripe */}
+      {/* Top red stripe — glowing under neon */}
       <mesh position={[0, 0.36, 0]} castShadow>
         <cylinderGeometry args={[0.105, 0.115, 0.05, 32]} />
-        <meshStandardMaterial color="#b00020" emissive="#cc0000" emissiveIntensity={0.15} roughness={0.3} />
+        <meshPhysicalMaterial
+          color="#cc0020"
+          emissive="#ff0033"
+          emissiveIntensity={0.35}
+          roughness={0.2}
+          metalness={0.1}
+        />
       </mesh>
       {/* Bottom red stripe */}
       <mesh position={[0, 0.30, 0]} castShadow>
         <cylinderGeometry args={[0.125, 0.13, 0.05, 32]} />
-        <meshStandardMaterial color="#b00020" emissive="#cc0000" emissiveIntensity={0.15} roughness={0.3} />
+        <meshPhysicalMaterial
+          color="#cc0020"
+          emissive="#ff0033"
+          emissiveIntensity={0.35}
+          roughness={0.2}
+          metalness={0.1}
+        />
       </mesh>
     </group>
   );
 }
 
 /* ─────────────────────────────────────────────
-   SceneContents — the full 3D scene (cinematic)
+   Floating Wireframe Shape — brand complementary graphic
+   ───────────────────────────────────────────── */
+function FloatingWireframe({ position, geometry, color, speed = 0.3, scale = 1 }) {
+  const ref = useRef();
+
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const t = clock.getElapsedTime() * speed;
+      ref.current.rotation.x = t * 0.7;
+      ref.current.rotation.y = t;
+      ref.current.rotation.z = t * 0.3;
+      // Subtle float
+      ref.current.position.y = position[1] + Math.sin(t * 0.8) * 0.3;
+    }
+  });
+
+  const wireGeo = useMemo(() => {
+    return new THREE.WireframeGeometry(geometry);
+  }, [geometry]);
+
+  return (
+    <lineSegments ref={ref} position={position} scale={scale}>
+      <bufferGeometry attach="geometry" {...wireGeo} />
+      <lineBasicMaterial
+        color={color}
+        transparent
+        opacity={0.2}
+        blending={THREE.AdditiveBlending}
+      />
+    </lineSegments>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Volumetric Light Shaft
+   ───────────────────────────────────────────── */
+function LightShaft({ position, rotation, color, height = 15, width = 0.5, opacity = 0.06 }) {
+  return (
+    <mesh position={position} rotation={rotation}>
+      <planeGeometry args={[width, height]} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={opacity}
+        blending={THREE.AdditiveBlending}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Neon Lane Edge Strips
+   ───────────────────────────────────────────── */
+function NeonEdgeStrip({ xPos, color }) {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[xPos, -0.46, -10]}>
+      <planeGeometry args={[0.04, 30]} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.6}
+        blending={THREE.AdditiveBlending}
+      />
+    </mesh>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   SceneContents — the full 3D scene (cyberpunk)
    ───────────────────────────────────────────── */
 export function SceneContents({ scrollYProgress }) {
   const ballRef = React.useRef();
   const textRef = React.useRef();
+
+  // Reusable geometries for wireframe shapes
+  const icoGeo = useMemo(() => new THREE.IcosahedronGeometry(2, 1), []);
+  const sphereGeo = useMemo(() => new THREE.SphereGeometry(1.5, 8, 8), []);
+  const torusGeo = useMemo(() => new THREE.TorusGeometry(1.8, 0.15, 8, 24), []);
 
   // 1. Ball falls onto lane (0 → 0.08)
   const ballY = useTransform(scrollYProgress, [0, 0.08], [4, 0]);
@@ -157,104 +249,200 @@ export function SceneContents({ scrollYProgress }) {
 
   return (
     <>
-      {/* ── Fog (masks canvas edges seamlessly) ── */}
-      <fog attach="fog" args={['#050505', 6, 22]} />
+      {/* ── Atmospheric Fog (deep brand purple haze) ── */}
+      <fogExp2 attach="fog" color="#0a0020" density={0.035} />
 
-      {/* ── Lighting (brighter for less visual fatigue) ── */}
-      <ambientLight intensity={0.5} />
+      {/* ══════════════════════════════════════
+          DRAMATIC LIGHTING RIG
+          High contrast, sharp shadows, neon colors
+          ══════════════════════════════════════ */}
+
+      {/* Very low ambient — keeps deep shadows */}
+      <ambientLight intensity={0.12} color="#1a0040" />
+
+      {/* KEY LIGHT — dramatic overhead spotlight */}
       <spotLight
-        position={[10, 18, 5]}
-        intensity={3.5}
+        position={[2, 16, 0]}
+        intensity={6}
         castShadow
-        penumbra={1}
-        angle={0.5}
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        penumbra={0.6}
+        angle={0.4}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-bias={-0.0001}
-        color="#ffffff"
+        color="#e8e0ff"
       />
+
+      {/* FILL — magenta rim from behind pins */}
       <spotLight
-        position={[-8, 14, -10]}
-        intensity={2.0}
+        position={[0, 10, LANE_END - 5]}
+        intensity={4}
         castShadow
         penumbra={0.8}
-        angle={0.6}
-        color="#e8e4f0"
+        angle={0.7}
+        color="#df2a8f"
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
       />
-      {/* Subtle accent fill from pin area */}
-      <pointLight position={[0, 2, LANE_END]} intensity={2.5} color="#3781fe" distance={10} decay={2} />
+
+      {/* ACCENT — blue spotlight from above-side */}
+      <spotLight
+        position={[-6, 12, -8]}
+        intensity={3}
+        castShadow
+        penumbra={0.7}
+        angle={0.5}
+        color="#3781fe"
+      />
+
+      {/* ── Neon Point Lights along the lane ── */}
+      <pointLight position={[-1.5, 0.5, 2]}    intensity={3} color="#3781fe" distance={8} decay={2} />
+      <pointLight position={[1.5, 0.5, -3]}    intensity={3} color="#df2a8f" distance={8} decay={2} />
+      <pointLight position={[-1.5, 0.5, -8]}   intensity={3} color="#3781fe" distance={8} decay={2} />
+      <pointLight position={[1.5, 0.5, -13]}   intensity={3} color="#df2a8f" distance={8} decay={2} />
+      <pointLight position={[0, 1.5, LANE_END]} intensity={4} color="#e7ff00" distance={6} decay={2} />
+      {/* Under-ball glow */}
+      <pointLight position={[0, -0.2, 0]}      intensity={2} color="#2b0059" distance={4} decay={2} />
+
+      {/* ══════════════════════════════════════
+          REFLECTIVE SURFACES
+          Mirror-like floor, polished lane
+          ══════════════════════════════════════ */}
 
       {/* ── Dark reflective floor ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, -12]} receiveShadow>
-        <planeGeometry args={[30, 50]} />
-        <meshStandardMaterial color="#060608" metalness={0.9} roughness={0.08} />
-      </mesh>
-
-      {/* ── Lane surface (subtle, premium) ── */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.48, -10]} receiveShadow>
-        <planeGeometry args={[2.4, 30]} />
-        <meshStandardMaterial
-          color="#1a1408"
-          roughness={0.2}
-          metalness={0.7}
+        <planeGeometry args={[40, 60]} />
+        <meshPhysicalMaterial
+          color="#030008"
+          metalness={0.95}
+          roughness={0.05}
+          reflectivity={1}
+          clearcoat={0.3}
+          clearcoatRoughness={0.1}
         />
       </mesh>
 
-      {/* ── Glowing Path (El recorrido) ── */}
+      {/* ── Lane surface (polished reflective) ── */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.48, -10]} receiveShadow>
+        <planeGeometry args={[2.4, 30]} />
+        <meshPhysicalMaterial
+          color="#1a1408"
+          roughness={0.1}
+          metalness={0.85}
+          clearcoat={0.5}
+          clearcoatRoughness={0.1}
+        />
+      </mesh>
+
+      {/* ── Glowing Lane Path ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.47, -10]}>
         <planeGeometry args={[1.6, 30]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           color="#df2a8f"
-          emissive="#df2a8f"
-          emissiveIntensity={0.8}
           transparent
-          opacity={0.15}
+          opacity={0.2}
           blending={THREE.AdditiveBlending}
         />
       </mesh>
 
-      {/* ── Lane guide lines (subtle brand accent) ── */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-1.2, -0.47, -10]}>
-        <planeGeometry args={[0.02, 30]} />
-        <meshBasicMaterial color="#3781fe" transparent opacity={0.3} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1.2, -0.47, -10]}>
-        <planeGeometry args={[0.02, 30]} />
-        <meshBasicMaterial color="#3781fe" transparent opacity={0.3} />
-      </mesh>
+      {/* ── Neon Edge Strips (bright lane borders) ── */}
+      <NeonEdgeStrip xPos={-1.2} color="#3781fe" />
+      <NeonEdgeStrip xPos={1.2} color="#3781fe" />
 
-      {/* ═══ PREMIUM TRON ENVIRONMENT ═══ */}
-      {/* Infinite fading grid */}
+      {/* ══════════════════════════════════════
+          ENVIRONMENTAL ELEMENTS
+          Wireframes, particles, light shafts
+          ══════════════════════════════════════ */}
+
+      {/* Infinite fading grid — more visible */}
       <Grid
-        position={[0, -1.0, 0]}
+        position={[0, -0.5, 0]}
         args={[100, 100]}
-        cellColor="#0a1220"
+        cellColor="#0a0825"
         sectionColor="#3781fe"
-        sectionThickness={1.0}
-        cellThickness={0.5}
-        fadeDistance={40}
+        sectionThickness={1.5}
+        cellThickness={0.6}
+        fadeDistance={50}
         fadeStrength={1}
         infiniteGrid
       />
 
-      {/* Atmospheric digital particles */}
-      <Sparkles 
-        count={50} 
-        scale={[20, 10, 30]} 
-        position={[0, 4, -10]} 
-        color="#df2a8f" 
-        size={2} 
-        speed={0.2} 
-        opacity={0.15} 
+      {/* ── Dense Atmospheric Particles ── */}
+      <Sparkles
+        count={200}
+        scale={[30, 15, 40]}
+        position={[0, 5, -10]}
+        color="#df2a8f"
+        size={3}
+        speed={0.3}
+        opacity={0.25}
       />
-      <Sparkles 
-        count={50} 
-        scale={[30, 15, 30]} 
-        position={[0, 2, -5]} 
-        color="#3781fe" 
-        size={1.5} 
-        speed={0.1} 
-        opacity={0.1} 
+      <Sparkles
+        count={150}
+        scale={[40, 20, 40]}
+        position={[0, 3, -5]}
+        color="#3781fe"
+        size={2}
+        speed={0.15}
+        opacity={0.2}
+      />
+      <Sparkles
+        count={80}
+        scale={[20, 10, 30]}
+        position={[0, 8, -15]}
+        color="#e7ff00"
+        size={1.5}
+        speed={0.1}
+        opacity={0.12}
+      />
+
+      {/* ── Floating Wireframe Shapes (brand complementary graphics) ── */}
+      <FloatingWireframe
+        position={[-8, 4, -15]}
+        geometry={icoGeo}
+        color="#3781fe"
+        speed={0.2}
+        scale={1.2}
+      />
+      <FloatingWireframe
+        position={[10, 6, -22]}
+        geometry={sphereGeo}
+        color="#df2a8f"
+        speed={0.15}
+        scale={1.5}
+      />
+      <FloatingWireframe
+        position={[-6, 8, -28]}
+        geometry={torusGeo}
+        color="#e7ff00"
+        speed={0.25}
+        scale={1}
+      />
+
+      {/* ── Volumetric Light Shafts (god rays) ── */}
+      <LightShaft
+        position={[-4, 5, -8]}
+        rotation={[0, 0.3, 0.15]}
+        color="#3781fe"
+        height={18}
+        width={1.2}
+        opacity={0.04}
+      />
+      <LightShaft
+        position={[5, 6, -14]}
+        rotation={[0, -0.2, -0.1]}
+        color="#df2a8f"
+        height={20}
+        width={1}
+        opacity={0.035}
+      />
+      <LightShaft
+        position={[0, 7, -20]}
+        rotation={[0.1, 0, 0]}
+        color="#2b0059"
+        height={16}
+        width={2}
+        opacity={0.05}
       />
 
       {/* ── 10 Pins ── */}
@@ -268,18 +456,19 @@ export function SceneContents({ scrollYProgress }) {
         />
       ))}
 
-      {/* ── Bowling Ball (Physical Material, premium) ── */}
+      {/* ── Bowling Ball (Mirror-like reflective sphere) ── */}
       <group ref={ballRef}>
         <mesh castShadow>
           <sphereGeometry args={[0.4, 64, 64]} />
           <meshPhysicalMaterial
             color="#1a0040"
-            metalness={0.8}
-            roughness={0.15}
+            metalness={0.95}
+            roughness={0.05}
             clearcoat={1}
-            clearcoatRoughness={0.1}
+            clearcoatRoughness={0.05}
+            reflectivity={1}
             emissive="#2b0059"
-            emissiveIntensity={0.08}
+            emissiveIntensity={0.15}
           />
         </mesh>
         {/* Thumb hole */}
@@ -311,11 +500,11 @@ export function SceneContents({ scrollYProgress }) {
 
 export default function Scene3D({ scrollYProgress }) {
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, background: '#050505' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1, background: '#0a0020' }}>
       <Canvas
         shadows
         camera={{ position: [0, 1.1, 7.5], fov: 45 }}
-        gl={{ antialias: true }}
+        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
       >
         <SceneContents scrollYProgress={scrollYProgress} />
       </Canvas>

@@ -11,8 +11,8 @@ import { SceneContents } from './Scene3D';
  * Coordinates with App's transition mask:
  * - Starts with a full veil (opacity 1) that fades out,
  *   revealing the 3D scene smoothly.
- * - Canvas uses shadows, fog, and intimate camera for
- *   premium visual quality.
+ * - Canvas uses shadows, fogExp2, neon lighting, and
+ *   reflective materials for cyberpunk visual quality.
  */
 
 export default function StrikeFinale() {

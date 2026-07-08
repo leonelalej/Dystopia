@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 
 /*
@@ -6,24 +6,12 @@ import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
  * SCROLL SCENE — 4-Section Alternating Parallax with Inertia
  * ═══════════════════════════════════════════════════════════
  *
- * Layout: 800vh tall scroll container → sticky 100vh viewport.
- * The bowling ball is fixed in the viewport and weaves horizontally
- * between left/right halves using useSpring for luxurious inertia.
- *
- * Sections (alternating zig-zag grid):
- *   1. THE LANES       → text LEFT,  ball RIGHT   (#3781fe)
- *   2. THE EXPERIENCE  → text RIGHT, ball LEFT    (#df2a8f)
- *   3. GASTRONOMY      → text LEFT,  ball RIGHT   (#e7ff00)
- *   4. RESERVATIONS    → text RIGHT, ball LEFT    (#3781fe)
- *
- * Ball weaving (via smoothProgress):
- *   0.00 → 0.25   center → right
- *   0.25 → 0.50   right  → left
- *   0.50 → 0.75   left   → right
- *   0.75 → 0.90   right  → center
+ * RE-DESIGN: Added glitch animations on titles, neon glow
+ * entrance effects, and subtle stretch/skew error simulation
+ * per the brand manual typography rules.
  */
 
-/* ---------- Section content (BookingSection + MenuSection integrated) ---------- */
+/* ---------- Section content ---------- */
 const SECTIONS = [
   {
     label: 'THE LANES',
@@ -81,11 +69,33 @@ const SECTIONS = [
   },
 ];
 
+/* ─── Glitch title entrance variants ─── */
+const glitchTitleVariants = {
+  hidden: {
+    opacity: 0,
+    skewX: -4,
+    scaleX: 1.05,
+    x: 0,
+  },
+  visible: {
+    opacity: 1,
+    skewX: [-4, 2, -1, 0.5, 0],
+    scaleX: [1.05, 0.98, 1.02, 0.99, 1],
+    x: [0, 3, -2, 1, 0],
+    transition: {
+      duration: 0.6,
+      ease: 'easeOut',
+      times: [0, 0.2, 0.4, 0.7, 1],
+    },
+  },
+};
+
 export default function ScrollScene() {
   const containerRef = useRef(null);
+  const [isGlitching, setIsGlitching] = useState(false);
   const { scrollYProgress } = useScroll({ target: containerRef });
 
-  /* ═══ LUXURIOUS INERTIA (replaces GSAP scrub: 2.5) ═══ */
+  /* ═══ LUXURIOUS INERTIA ═══ */
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 45,
     damping: 22,
@@ -187,7 +197,7 @@ export default function ScrollScene() {
       {/* ─── Sticky Viewport ─── */}
       <div className="sticky-viewport">
 
-        {/* Subtle grid and new ambient layers */}
+        {/* Subtle grid and ambient layers */}
         <div className="noise-overlay" />
         <div className="ambient-glow" />
         <motion.div className="bg-grid" style={{ y: gridY }} />
@@ -203,8 +213,25 @@ export default function ScrollScene() {
           className="hero-content"
           style={{ opacity: heroOp, scale: heroScale, y: heroY }}
         >
-          <h1 className="hero-title">DYSTOPIA</h1>
-          <p className="hero-subtitle">Bowling & Lounge</p>
+          {/* Glitch title with data-text for pseudo-element layers */}
+          <motion.h1
+            className={`hero-title ${isGlitching ? 'hero-title--glitch' : ''}`}
+            data-text="DYSTOPIA"
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1.2, ease: [0.2, 0.8, 0.2, 1] }}
+            onAnimationComplete={() => setIsGlitching(true)}
+          >
+            DYSTOPIA
+          </motion.h1>
+          <motion.p
+            className="hero-subtitle"
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1.2, ease: [0.2, 0.8, 0.2, 1], delay: 0.2 }}
+          >
+            Bowling & Lounge
+          </motion.p>
 
           <motion.div className="hero-scroll-hint" style={{ opacity: scrollHintOp }}>
             <div className="hero-scroll-line">
@@ -277,11 +304,16 @@ export default function ScrollScene() {
 }
 
 /* ────────────────────────────────────────────
-   Section Panel — reusable text panel
+   Section Panel — glitch entrance on titles
    ──────────────────────────────────────────── */
 function SectionPanel({ data, opacity, slideX, slideY }) {
   const sideClass = data.side === 'left' ? 'section-text--left' : 'section-text--right';
   const pointerEvents = useTransform(opacity, (v) => (v > 0.1 ? 'auto' : 'none'));
+
+  /* Neon text-shadow color matching section accent */
+  const neonStyle = {
+    textShadow: `0 0 25px ${data.accent}33, 0 0 50px ${data.accent}15`,
+  };
 
   return (
     <motion.div
@@ -293,9 +325,21 @@ function SectionPanel({ data, opacity, slideX, slideY }) {
           {data.label}
         </p>
         <div className={`section-divider section-divider--${data.accentName}`} />
-        <h2 className="section-title" style={{ whiteSpace: 'pre-line' }}>
+        {/* Title with glitch entrance animation */}
+        <motion.h2
+          className="section-title"
+          style={{ whiteSpace: 'pre-line', ...neonStyle }}
+          initial={{ opacity: 0, skewX: -3, scaleX: 1.04 }}
+          whileInView={{
+            opacity: 1,
+            skewX: [-3, 1.5, -0.8, 0],
+            scaleX: [1.04, 0.98, 1.01, 1],
+          }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          viewport={{ once: true, amount: 0.5 }}
+        >
           {data.title}
-        </h2>
+        </motion.h2>
         <p className="section-description">{data.desc}</p>
         {data.features && (
           <p className="section-features">{data.features}</p>
