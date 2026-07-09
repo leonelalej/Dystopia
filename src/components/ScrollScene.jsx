@@ -93,14 +93,13 @@ const glitchTitleVariants = {
 export default function ScrollScene() {
   const containerRef = useRef(null);
   const [isGlitching, setIsGlitching] = useState(false);
-  const { scrollYProgress } = useScroll({ target: containerRef });
-
-  /* ═══ LUXURIOUS INERTIA ═══ */
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 45,
-    damping: 22,
-    restDelta: 0.001,
+  const { scrollYProgress } = useScroll({ 
+    target: containerRef,
+    offset: ['start start', 'end end']
   });
+
+  /* ═══ LUXURIOUS INERTIA (Removed to fix sticky scroll lag) ═══ */
+  const smoothProgress = scrollYProgress;
 
   /* ─── Ball offset (pixels from center) ─── */
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -149,6 +148,7 @@ export default function ScrollScene() {
   const heroOp    = useTransform(smoothProgress, [0, 0.015, 0.04], [1, 0.8, 0]);
   const heroScale = useTransform(smoothProgress, [0, 0.015, 0.04], [1, 0.97, 0.88]);
   const heroY     = useTransform(smoothProgress, [0, 0.04], [0, -80]);
+  const heroDisplay = useTransform(smoothProgress, (v) => v > 0.05 ? 'none' : 'flex');
 
   /* ═══ BALL APPEARANCE ═══ */
   const ballOpacity = useTransform(smoothProgress, [0, 0.02, 0.06], [0, 0, 1]);
@@ -211,7 +211,7 @@ export default function ScrollScene() {
         {/* ══════════ HERO ══════════ */}
         <motion.div
           className="hero-content"
-          style={{ opacity: heroOp, scale: heroScale, y: heroY }}
+          style={{ opacity: heroOp, scale: heroScale, y: heroY, display: heroDisplay }}
         >
           {/* Glitch title with data-text for pseudo-element layers */}
           <motion.h1

@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
 import { motion } from 'framer-motion';
 import Header from './components/Navbar';
 import ScrollScene from './components/ScrollScene';
-import StrikeFinale from './components/StrikeFinale';
 import Footer from './components/Footer';
 import SocialBar from './components/SocialBar';
+
+/* PERF: Lazy-load the entire 3D pipeline (Three.js + R3F + Drei)
+ * so it's excluded from the critical render path.
+ * The chunk only downloads when shouldRender3D flips to true (~20% scroll). */
+const StrikeFinale = React.lazy(() => import('./components/StrikeFinale'));
 
 /*
  * App — Root composition
@@ -64,7 +68,9 @@ export default function App() {
         style={{ opacity: maskOpacity }}
       />
 
-      <StrikeFinale shouldRender={shouldRender3D} />
+      <Suspense fallback={null}>
+        <StrikeFinale shouldRender={shouldRender3D} />
+      </Suspense>
       <Footer isDocked={isDocked} />
       <SocialBar isDocked={isDocked} />
     </>

@@ -12,6 +12,17 @@ export default defineConfig({
   preview: {
     allowedHosts: true
   },
+  /* PERF: Pre-bundle heavy Three.js ecosystem modules during
+   * dev server startup instead of on-demand lazy discovery.
+   * Eliminates the cascade of 2700+ module requests. */
+  optimizeDeps: {
+    include: [
+      'three',
+      '@react-three/fiber',
+      '@react-three/drei',
+      'react-reconciler',
+    ],
+  },
   build: {
     chunkSizeWarningLimit: 1600,
     rollupOptions: {

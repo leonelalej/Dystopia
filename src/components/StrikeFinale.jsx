@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { Suspense, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -14,6 +14,10 @@ import { SceneContents } from './Scene3D';
  *   revealing the 3D scene smoothly.
  * - Canvas uses shadows, fogExp2, neon lighting, and
  *   reflective materials for cyberpunk visual quality.
+ *
+ * PERF: dpr capped at [1, 1.5] to prevent excessive
+ * pixel-ratio rendering. Suspense wraps SceneContents
+ * to prevent render-blocking during geometry creation.
  */
 
 export default function StrikeFinale({ shouldRender = false }) {
@@ -57,10 +61,13 @@ export default function StrikeFinale({ shouldRender = false }) {
           <div style={{ position: 'absolute', inset: 0 }}>
             <Canvas
               shadows
+              dpr={[1, 1.5]}
               camera={{ position: [0, 1.1, 7.5], fov: 45 }}
               gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, powerPreference: "high-performance" }}
             >
-              <SceneContents scrollYProgress={scrollYProgress} />
+              <Suspense fallback={null}>
+                <SceneContents scrollYProgress={scrollYProgress} />
+              </Suspense>
             </Canvas>
           </div>
         )}
