@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTransform } from 'framer-motion';
-import { Grid, Sparkles } from '@react-three/drei';
+import { Grid, Sparkles, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 /*
@@ -45,30 +45,6 @@ const SCATTER_DIRS = [
   { dx:  3.5, dy: 2,   dz: -1,  rx:-1,  ry: 4,  rz: 2 },
 ];
 
-/* ─────────────────────────────────────────────
-   Bowling pin profile
-   ───────────────────────────────────────────── */
-function usePinGeometry() {
-  return useMemo(() => {
-    const points = [
-      new THREE.Vector2(0.00, -0.35),
-      new THREE.Vector2(0.16, -0.35),
-      new THREE.Vector2(0.18, -0.30),
-      new THREE.Vector2(0.22, -0.15),
-      new THREE.Vector2(0.24,  0.00),
-      new THREE.Vector2(0.22,  0.12),
-      new THREE.Vector2(0.17,  0.22),
-      new THREE.Vector2(0.11,  0.32),
-      new THREE.Vector2(0.09,  0.38),
-      new THREE.Vector2(0.10,  0.44),
-      new THREE.Vector2(0.10,  0.48),
-      new THREE.Vector2(0.08,  0.54),
-      new THREE.Vector2(0.00,  0.58),
-    ];
-    return new THREE.LatheGeometry(points, 32);
-  }, []);
-}
-
 // Reusable materials for pins to save huge amounts of memory & draw calls
 const pinBodyMat = new THREE.MeshStandardMaterial({
   color: "#f0ece4",
@@ -84,14 +60,18 @@ const pinStripeMat = new THREE.MeshStandardMaterial({
   metalness: 0.1,
 });
 
-function Pin({ startX, startZ, scatter, scrollYProgress }) {
+function GLTFPin({ pinGeom, stripeGeom, defaultPos, scatter, scrollYProgress }) {
   const groupRef = React.useRef();
-  const pinGeo = usePinGeometry();
+
+  const startX = defaultPos[0];
+  const startY = defaultPos[1];
+  const startZ = defaultPos[2];
 
   const x    = useTransform(scrollYProgress, [0, 0.55, 0.75], [startX, startX, startX + scatter.dx]);
-  const y    = useTransform(scrollYProgress, [0, 0.55, 0.75], [0, 0, scatter.dy]);
+  const y    = useTransform(scrollYProgress, [0, 0.55, 0.75], [startY, startY, startY + scatter.dy]);
   const z    = useTransform(scrollYProgress, [0, 0.55, 0.75], [startZ, startZ, startZ + scatter.dz]);
-  const rotX = useTransform(scrollYProgress, [0, 0.55, 0.75], [0, 0, scatter.rx]);
+  // GLTF model pins have a default X rotation of Math.PI / 2
+  const rotX = useTransform(scrollYProgress, [0, 0.55, 0.75], [Math.PI / 2, Math.PI / 2, Math.PI / 2 + scatter.rx]);
   const rotY = useTransform(scrollYProgress, [0, 0.55, 0.75], [0, 0, scatter.ry]);
   const rotZ = useTransform(scrollYProgress, [0, 0.55, 0.75], [0, 0, scatter.rz]);
 
@@ -104,13 +84,8 @@ function Pin({ startX, startZ, scatter, scrollYProgress }) {
 
   return (
     <group ref={groupRef}>
-      <mesh geometry={pinGeo} material={pinBodyMat} castShadow />
-      <mesh position={[0, 0.36, 0]} material={pinStripeMat} castShadow>
-        <cylinderGeometry args={[0.105, 0.115, 0.05, 32]} />
-      </mesh>
-      <mesh position={[0, 0.30, 0]} material={pinStripeMat} castShadow>
-        <cylinderGeometry args={[0.125, 0.13, 0.05, 32]} />
-      </mesh>
+      <mesh geometry={pinGeom} material={pinBodyMat} castShadow receiveShadow />
+      <mesh geometry={stripeGeom} material={pinStripeMat} castShadow receiveShadow />
     </group>
   );
 }
@@ -250,6 +225,7 @@ function useWoodTexture() {
    SceneContents
    ───────────────────────────────────────────── */
 export function SceneContents({ scrollYProgress }) {
+  const { nodes, materials } = useGLTF('/Bowling.glb');
   const ballRef = React.useRef();
   const textRef = React.useRef();
   const woodTexture = useWoodTexture();
@@ -262,21 +238,45 @@ export function SceneContents({ scrollYProgress }) {
   const dodGeo = useMemo(() => new THREE.DodecahedronGeometry(1.5, 0), []);
   const cylGeo = useMemo(() => new THREE.CylinderGeometry(1.2, 1.2, 3, 6), []);
 
-  const ballY = useTransform(scrollYProgress, [0, 0.08], [4, 0]);
-  const ballZ = useTransform(scrollYProgress, [0.08, 0.55, 0.75], [0, LANE_END, LANE_END - 3]);
-  const ballRotX = useTransform(scrollYProgress, [0.08, 0.55], [0, -Math.PI * 20]);
+  const GLTF_PINS = useMemo(() => [
+    { id: 1,  pinGeom: nodes.CUBezierCurve001.geometry, stripeGeom: nodes.CUBezierCurve001_1.geometry, defaultPos: [0, 0, 0] },
+    { id: 2,  pinGeom: nodes.CUBezierCurve002.geometry, stripeGeom: nodes.CUBezierCurve002_1.geometry, defaultPos: [-1.164, 0.019, -1.462] },
+    { id: 3,  pinGeom: nodes.CUBezierCurve003.geometry, stripeGeom: nodes.CUBezierCurve003_1.geometry, defaultPos: [1.073, 0.019, -1.462] },
+    { id: 4,  pinGeom: nodes.CUBezierCurve004.geometry, stripeGeom: nodes.CUBezierCurve004_1.geometry, defaultPos: [0, 0, -2.989] },
+    { id: 5,  pinGeom: nodes.CUBezierCurve005.geometry, stripeGeom: nodes.CUBezierCurve005_1.geometry, defaultPos: [-2.216, 0, -2.989] },
+    { id: 6,  pinGeom: nodes.CUBezierCurve006.geometry, stripeGeom: nodes.CUBezierCurve006_1.geometry, defaultPos: [2.196, 0, -2.989] },
+    { id: 7,  pinGeom: nodes.CUBezierCurve007.geometry, stripeGeom: nodes.CUBezierCurve007_1.geometry, defaultPos: [1.073, 0.019, -4.594] },
+    { id: 8,  pinGeom: nodes.CUBezierCurve008.geometry, stripeGeom: nodes.CUBezierCurve008_1.geometry, defaultPos: [-1.164, 0.019, -4.594] },
+    { id: 9,  pinGeom: nodes.CUBezierCurve009.geometry, stripeGeom: nodes.CUBezierCurve009_1.geometry, defaultPos: [-3.421, 0.019, -4.594] },
+    { id: 10, pinGeom: nodes.CUBezierCurve010.geometry, stripeGeom: nodes.CUBezierCurve010_1.geometry, defaultPos: [3.167, 0.019, -4.594] },
+  ], [nodes]);
+
+  const ballMat = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: "#1a0040",
+    metalness: 0.95,
+    roughness: 0.05,
+    clearcoat: 1,
+    clearcoatRoughness: 0.05,
+    reflectivity: 1,
+    emissive: "#2b0059",
+    emissiveIntensity: 0.15
+  }), []);
+
+  const ballY = useTransform(scrollYProgress, [0, 0.08], [4, 1.017]);
+  const ballZ = useTransform(scrollYProgress, [0.08, 0.55, 0.75], [3.535, -5.5, -8]);
+  const ballRotX = useTransform(scrollYProgress, [0.08, 0.55], [-0.839, -0.839 - Math.PI * 20]);
   const textScale = useTransform(scrollYProgress, [0.54, 0.58, 0.70, 0.80], [0, 1.2, 1, 0]);
 
   useFrame(({ camera }) => {
     const bz = ballZ.get();
     const by = ballY.get();
+    camera.position.x = 1.113 * 0.8;
+    camera.position.y = 1.2 + by * 0.2;
     camera.position.z = bz + 4;
-    camera.position.y = 1.0 + by * 0.2;
-    camera.lookAt(0, 0.3, bz - 3);
+    camera.lookAt(0.5, 0.3, bz - 3);
 
     if (ballRef.current) {
-      ballRef.current.position.y = by;
-      ballRef.current.position.z = bz;
+      ballRef.current.position.set(1.113, by, bz);
       ballRef.current.rotation.x = ballRotX.get();
     }
     if (textRef.current) {
@@ -372,28 +372,27 @@ export function SceneContents({ scrollYProgress }) {
       <LightShaft position={[5, 6, -14]} rotation={[0, -0.2, -0.1]} color="#df2a8f" height={20} width={1} opacity={0.035} />
       <LightShaft position={[0, 7, -20]} rotation={[0.1, 0, 0]} color="#2b0059" height={16} width={2} opacity={0.05} />
 
-      {PIN_POSITIONS.map((pin, i) => (
-        <Pin key={pin.id} startX={pin.x} startZ={pin.z} scatter={SCATTER_DIRS[i]} scrollYProgress={scrollYProgress} />
+      {/* Blender Floor */}
+      <mesh geometry={nodes.Floor.geometry} material={materials.Floor} receiveShadow />
+      
+      {/* Blender Lights */}
+      <mesh geometry={nodes.Light1.geometry} material={materials.Light} position={[18.052, 2.475, 2.597]} rotation={[0, 0, -1.578]} scale={2.712} />
+      <mesh geometry={nodes.Light2.geometry} material={materials.Light2} position={[0.142, 17.634, 2.597]} rotation={[0, 0, 0.001]} scale={2.712} />
+
+      {GLTF_PINS.map((pin, i) => (
+        <GLTFPin
+          key={pin.id}
+          pinGeom={pin.pinGeom}
+          stripeGeom={pin.stripeGeom}
+          defaultPos={pin.defaultPos}
+          scatter={SCATTER_DIRS[i]}
+          scrollYProgress={scrollYProgress}
+        />
       ))}
 
       {/* Bowling Ball - remains Physical for top quality reflections */}
       <group ref={ballRef}>
-        <mesh castShadow>
-          <sphereGeometry args={[0.4, 64, 64]} />
-          <meshPhysicalMaterial color="#1a0040" metalness={0.95} roughness={0.05} clearcoat={1} clearcoatRoughness={0.05} reflectivity={1} emissive="#2b0059" emissiveIntensity={0.15} />
-        </mesh>
-        <mesh position={[0, -0.08, 0.36]}>
-          <sphereGeometry args={[0.07, 16, 16]} />
-          <meshStandardMaterial color="#000000" roughness={0.9} />
-        </mesh>
-        <mesh position={[0.15, 0.15, 0.32]}>
-          <sphereGeometry args={[0.06, 16, 16]} />
-          <meshStandardMaterial color="#000000" roughness={0.9} />
-        </mesh>
-        <mesh position={[-0.15, 0.15, 0.32]}>
-          <sphereGeometry args={[0.06, 16, 16]} />
-          <meshStandardMaterial color="#000000" roughness={0.9} />
-        </mesh>
+        <mesh geometry={nodes.Bowling_Ball.geometry} material={ballMat} castShadow />
       </group>
 
       <group ref={textRef} position={[0, 1.5, LANE_END - 2]}>
@@ -422,3 +421,5 @@ export default function Scene3D({ scrollYProgress }) {
     </div>
   );
 }
+
+useGLTF.preload('/Bowling.glb');

@@ -6,9 +6,8 @@ import ScrollScene from './components/ScrollScene';
 import Footer from './components/Footer';
 import SocialBar from './components/SocialBar';
 
-/* PERF: Lazy-load the entire 3D pipeline (Three.js + R3F + Drei)
- * so it's excluded from the critical render path.
- * The chunk only downloads when shouldRender3D flips to true (~20% scroll). */
+/* PERF: Lazy-load the 3D pipeline (Three.js + GSAP)
+ * so it's excluded from the critical render path. */
 const StrikeFinale = React.lazy(() => import('./components/StrikeFinale'));
 
 /*
@@ -18,9 +17,9 @@ const StrikeFinale = React.lazy(() => import('./components/StrikeFinale'));
  * 1. Social sidebar dock state (flips at 95% scroll)
  * 2. Transition mask for seamless 2D → 3D handoff
  *
- * The mask fades to full opacity as the ScrollScene ends
- * and fades out as the StrikeFinale 3D scene begins,
- * creating a smooth cinematic bridge between layers.
+ * The 3D scene now uses GSAP ScrollTrigger internally,
+ * so no shouldRender gating is needed — GSAP only
+ * activates when the section enters viewport.
  */
 
 export default function App() {
@@ -28,17 +27,7 @@ export default function App() {
   const [isDocked, setIsDocked] = React.useState(false);
   const isDockedRef = React.useRef(false);
 
-  const [shouldRender3D, setShouldRender3D] = React.useState(false);
-  const shouldRender3DRef = React.useRef(false);
-
   useMotionValueEvent(scrollYProgress, 'change', (v) => {
-    // Mount the 3D scene only after the user starts scrolling down (past 20%)
-    const next3D = v >= 0.2;
-    if (next3D !== shouldRender3DRef.current) {
-      shouldRender3DRef.current = next3D;
-      setShouldRender3D(next3D);
-    }
-
     const next = v >= 0.95;
     if (next !== isDockedRef.current) {
       isDockedRef.current = next;
@@ -69,7 +58,7 @@ export default function App() {
       />
 
       <Suspense fallback={null}>
-        <StrikeFinale shouldRender={shouldRender3D} />
+        <StrikeFinale />
       </Suspense>
       <Footer isDocked={isDocked} />
       <SocialBar isDocked={isDocked} />

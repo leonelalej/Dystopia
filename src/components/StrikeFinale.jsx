@@ -1,93 +1,84 @@
-import React, { Suspense, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
-import * as THREE from 'three';
-import { SceneContents } from './Scene3D';
+import React, { useRef, useEffect } from 'react';
+import BowlingScene from './BowlingScene';
 
 /*
  * ═══════════════════════════════════════════════════════════
- * STRIKE FINALE — Cinematic 3D Bowling Lane + Scroll Strike
+ * STRIKE FINALE — Hyper-Realistic 3D Bowling (Vanilla Three.js)
  * ═══════════════════════════════════════════════════════════
  *
- * Coordinates with App's transition mask:
- * - Starts with a full veil (opacity 1) that fades out,
- *   revealing the 3D scene smoothly.
- * - Canvas uses shadows, fogExp2, neon lighting, and
- *   reflective materials for cyberpunk visual quality.
+ * Thin React wrapper that:
+ * 1. Renders a raw <canvas> inside a sticky viewport
+ * 2. On mount, instantiates BowlingScene (vanilla Three.js + GSAP)
+ * 3. On unmount, calls dispose() to clean up WebGL + GSAP
  *
- * PERF: dpr capped at [1, 1.5] to prevent excessive
- * pixel-ratio rendering. Suspense wraps SceneContents
- * to prevent render-blocking during geometry creation.
+ * The GSAP ScrollTrigger inside BowlingScene handles all
+ * scroll-driven animation (ball roll, pin scatter, camera, overlays).
+ * No R3F. No Framer Motion.
  */
 
-export default function StrikeFinale({ shouldRender = false }) {
+export default function StrikeFinale() {
   const containerRef = useRef(null);
+  const canvasContainerRef = useRef(null);
+  const veilRef = useRef(null);
+  const flashRef = useRef(null);
+  const sceneRef = useRef(null);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
+  useEffect(() => {
+    if (!canvasContainerRef.current) return;
 
-  /* ═══ ENTRY VEIL — starts opaque, fades out as user scrolls in ═══ */
-  const veilOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.08, 0.15],
-    [1, 0.5, 0]
-  );
+    const scene = new BowlingScene(canvasContainerRef.current, {
+      overlays: {
+        veil: veilRef.current,
+        flash: flashRef.current,
+      },
+      scrollContainer: containerRef.current,  // the 400vh .strike-finale-container
+    });
 
-  /* ═══ EXIT VEIL — dims slightly at the end for text readability ═══ */
-  const exitVeilOpacity = useTransform(
-    scrollYProgress,
-    [0.75, 0.90],
-    [0, 0.3]
-  );
+    sceneRef.current = scene;
 
-  /* ═══ IMPACT FLASH ═══ */
-  const flashOpacity = useTransform(
-    scrollYProgress,
-    [0.54, 0.57, 0.62, 0.68],
-    [0, 1, 0.5, 0]
-  );
+    scene.init().catch((err) => {
+      console.error('[BowlingScene] Failed to initialize:', err);
+    });
+
+    return () => {
+      scene.dispose();
+      sceneRef.current = null;
+    };
+  }, []);
 
   return (
     <div ref={containerRef} className="strike-finale-container">
       <div className="strike-sticky-viewport">
-        
+
         {/* Background noise for consistency */}
         <div className="noise-overlay" />
 
-        {/* ═══ 3D SCENE (Mounted lazily once the user scrolls down) ═══ */}
-        {shouldRender && (
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <Canvas
-              shadows
-              dpr={[1, 1.5]}
-              camera={{ position: [0, 1.1, 7.5], fov: 45 }}
-              gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, powerPreference: "high-performance" }}
-            >
-              <Suspense fallback={null}>
-                <SceneContents scrollYProgress={scrollYProgress} />
-              </Suspense>
-            </Canvas>
-          </div>
-        )}
+        {/* ═══ 3D CANVAS (Vanilla Three.js) ═══ */}
+        <div
+          ref={canvasContainerRef}
+          style={{ position: 'absolute', inset: 0 }}
+        >
+          <canvas
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        </div>
 
-        {/* Entry veil — seamless reveal from transition mask */}
-        <motion.div
+        {/* Entry/exit veil — controlled by GSAP via BowlingScene.state */}
+        <div
+          ref={veilRef}
           className="tunnel-veil"
-          style={{ opacity: veilOpacity, pointerEvents: 'none' }}
-        />
-
-        {/* Exit veil — subtle dim at end */}
-        <motion.div
-          className="tunnel-veil"
-          style={{ opacity: exitVeilOpacity, pointerEvents: 'none' }}
+          style={{ opacity: 1, pointerEvents: 'none' }}
         />
 
         {/* ═══ IMPACT FLASH ═══ */}
-        <motion.div
+        <div
+          ref={flashRef}
           className="strike-flash"
-          style={{ opacity: flashOpacity, pointerEvents: 'none' }}
+          style={{ opacity: 0, pointerEvents: 'none' }}
         />
 
       </div>
